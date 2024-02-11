@@ -14,17 +14,19 @@ import (
 )
 
 var (
-	id = 0
+	ID = 0
 )
 
 type AppscodeEmployee struct {
-	id, name, salary string
+	id     int    `json:"id"`
+	name   string `json:"name"`
+	salary string `json:"salary"`
 }
 
 type Appscode struct {
-	dbHost     string
-	dbName     string
-	dbPassword string
+	dbHost     string `json:"dbhost"`
+	dbName     string `json:"dbname"`
+	dbPassword string `json:"dbpassword"`
 }
 
 func main() {
@@ -50,9 +52,17 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Get("/", in.getFunc)
-	r.Get("/info", in.getInfo)
-	r.Post("/add", in.addInfo)
+	//r.Get("/", in.getFunc)
+	//r.Get("/info", in.getInfo)
+	//r.Post("/add", in.addInfo)
+	r.Group(func(r chi.Router) {
+		// jwtauth-> will learn later
+		r.Route("/", func(r chi.Router) {
+			r.Get("/", in.getFunc)
+			r.Get("/info", in.getInfo)
+			r.Post("/add", in.addInfo)
+		})
+	})
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: r,
@@ -61,8 +71,8 @@ func main() {
 }
 
 func (in Appscode) getFunc(w http.ResponseWriter, r *http.Request) {
-	id += 1
-	data := "Welcome\nCalling time:" + strconv.Itoa(id)
+	ID += 1
+	data := "Welcome\nCalling time:" + strconv.Itoa(ID)
 	writeJsonResponse(w, 200, data)
 }
 
@@ -74,7 +84,8 @@ func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	employee := []AppscodeEmployee{}
 	for rows.Next() {
-		var id, name, salary string
+		var id int
+		var name, salary string
 		err := rows.Scan(&id, &name, &salary)
 		if err != nil {
 			log.Fatalf("while scanning the row %s\n", err.Error())
@@ -92,10 +103,26 @@ func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
-	id += 1
-	data := "Welcome\nCalling time:" + strconv.Itoa(id)
-
-	writeJsonResponse(w, 200, data)
+	data := AppscodeEmployee{}
+	json.NewDecoder(r.Body).Decode(&data)
+	db := in.openConnection()
+	insertQuery, err := db.Prepare("insert into appscode values (?, ?, ?)")
+	if err != nil {
+		log.Fatalf("preparing the db query %s\n", err.Error())
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("while begining the transaction %s\n", err.Error())
+	}
+	_, err = tx.Stmt(insertQuery).Exec(data.id, data.name, data.salary)
+	if err != nil {
+		log.Fatalf("execing the insert command %s\n", err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatalf("while commint the transaction %s\n", err.Error())
+	}
+	in.closeConnection(db)
 }
 
 func writeJsonResponse(w http.ResponseWriter, status int, data any) {
