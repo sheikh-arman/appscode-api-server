@@ -18,7 +18,7 @@ var (
 )
 
 type AppscodeEmployee struct {
-	id     int    `json:"id"`
+	id     string `json:"id"`
 	name   string `json:"name"`
 	salary string `json:"salary"`
 }
@@ -67,7 +67,9 @@ func main() {
 		Addr:    ":8080",
 		Handler: r,
 	}
+	fmt.Println("server started on port 8080")
 	fmt.Println(server.ListenAndServe())
+
 }
 
 func (in Appscode) getFunc(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +86,7 @@ func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	employee := []AppscodeEmployee{}
 	for rows.Next() {
-		var id int
+		var id string
 		var name, salary string
 		err := rows.Scan(&id, &name, &salary)
 		if err != nil {
@@ -104,7 +106,11 @@ func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 
 func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
 	data := AppscodeEmployee{}
-	json.NewDecoder(r.Body).Decode(&data)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		log.Fatalf("issue: ", err.Error())
+	}
+	log.Println(data)
 	db := in.openConnection()
 	insertQuery, err := db.Prepare("insert into appscode values (?, ?, ?)")
 	if err != nil {
@@ -145,3 +151,9 @@ func (in Appscode) closeConnection(db *sql.DB) {
 		log.Fatalf("closing connection %s\n", err.Error())
 	}
 }
+
+//{
+//"id":"3",
+//"name":"asdsa",
+//"salary":"ada"
+//}
