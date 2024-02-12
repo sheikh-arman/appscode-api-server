@@ -29,6 +29,17 @@ type Appscode struct {
 	dbPassword string `json:"dbpassword"`
 }
 
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Item struct {
+	Title string `json:"title"`
+	Post  string `json:"post"`
+	Id    int    `json:"id"`
+}
+
 func main() {
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
@@ -102,6 +113,35 @@ func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	//writeJsonResponse(w, 200, employee)
 	in.closeConnection(db)
+	//var feeds []Item
+	//var feed Item
+	//feed = Item{
+	//	Id:    ID,
+	//	Title: "Nothing",
+	//	Post:  "Lorem Ipsum Doller Site",
+	//}
+	////feeds2[ID] = feed
+	//ID++
+	//feeds = append(feeds, feed)
+	//
+	//feed = Item{
+	//	Id:    ID,
+	//	Title: "Nothing2",
+	//	Post:  "Lorem Ipsum Doller Site2",
+	//}
+	////feeds2[ID] = feed
+	//ID++
+	//feeds = append(feeds, feed)
+	//
+	//feed = Item{
+	//	Id:    ID,
+	//	Title: "Nothing3",
+	//	Post:  "Lorem Ipsum Doller Site3",
+	//}
+	////feeds2[ID] = feed
+	//ID++
+	//feeds = append(feeds, feed)
+	//writeJsonResponse(w, 200, feeds)
 }
 
 func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
