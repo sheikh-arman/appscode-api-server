@@ -13,3 +13,4 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/api-server .
 ENTRYPOINT ["./api-server"]
+CMD ["start"]

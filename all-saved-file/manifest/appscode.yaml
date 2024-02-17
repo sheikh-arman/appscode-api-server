@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: appscode
+  name: appscode
+  namespace: appscode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appscode
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: appscode
+    spec:
+      containers:
+      - image: skaliarman/appscode-api-server:latest
+        name: appscode-api-server
+        resources: {}
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: appscode-cm
+              key: host
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: appscode-cm
+              key: dbname
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: my-secret
+              key: root-password
+status: {}
