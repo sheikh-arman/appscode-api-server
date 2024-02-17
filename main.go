@@ -18,26 +18,15 @@ var (
 )
 
 type AppscodeEmployee struct {
-	id     string `json:"id"`
-	name   string `json:"name"`
-	salary string `json:"salary"`
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Salary string `json:"salary"`
 }
 
 type Appscode struct {
 	dbHost     string `json:"dbhost"`
 	dbName     string `json:"dbname"`
 	dbPassword string `json:"dbpassword"`
-}
-
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type Item struct {
-	Title string `json:"title"`
-	Post  string `json:"post"`
-	Id    int    `json:"id"`
 }
 
 func main() {
@@ -63,15 +52,14 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	//r.Get("/", in.getFunc)
-	//r.Get("/info", in.getInfo)
-	//r.Post("/add", in.addInfo)
 	r.Group(func(r chi.Router) {
 		// jwtauth-> will learn later
 		r.Route("/", func(r chi.Router) {
 			r.Get("/", in.getFunc)
-			r.Get("/info", in.getInfo)
-			r.Post("/add", in.addInfo)
+			r.Get("/employee", in.getInfo)
+			r.Post("/employee", in.addInfo)
+			r.Put("/employee", in.editInfo)
+			r.Delete("/employee", in.deleteInfo)
 		})
 	})
 	server := http.Server{
@@ -80,68 +68,38 @@ func main() {
 	}
 	fmt.Println("server started on port 8080")
 	fmt.Println(server.ListenAndServe())
-
 }
 
 func (in Appscode) getFunc(w http.ResponseWriter, r *http.Request) {
 	ID += 1
-	data := "Welcome\nCalling time:" + strconv.Itoa(ID)
-	writeJsonResponse(w, 200, data)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintln(w, "Welcome")
+	fmt.Fprintln(w, "Calling time:"+strconv.Itoa(ID))
+	w.WriteHeader(403)
 }
 
 func (in Appscode) getInfo(w http.ResponseWriter, r *http.Request) {
 	db := in.openConnection()
-	rows, err := db.Query("select * from appscode")
+	rows, err := db.Query("select * from appscode.employee")
 	if err != nil {
 		log.Fatalf("querying the books table %s\n", err.Error())
 	}
 	employee := []AppscodeEmployee{}
 	for rows.Next() {
-		var id string
+		var id int
 		var name, salary string
 		err := rows.Scan(&id, &name, &salary)
 		if err != nil {
 			log.Fatalf("while scanning the row %s\n", err.Error())
 		}
 		log.Println(id, name, salary)
-		employee = append(employee, AppscodeEmployee{id: id, name: name, salary: salary})
+		obj := AppscodeEmployee{
+			Id: id, Name: name, Salary: salary,
+		}
+		employee = append(employee, obj)
 	}
-	log.Println(employee)
-	err = json.NewEncoder(w).Encode(employee)
-	if err != nil {
-		log.Fatalf("encoding employees: %s\n", err.Error())
-	}
-	//writeJsonResponse(w, 200, employee)
 	in.closeConnection(db)
-	//var feeds []Item
-	//var feed Item
-	//feed = Item{
-	//	Id:    ID,
-	//	Title: "Nothing",
-	//	Post:  "Lorem Ipsum Doller Site",
-	//}
-	////feeds2[ID] = feed
-	//ID++
-	//feeds = append(feeds, feed)
-	//
-	//feed = Item{
-	//	Id:    ID,
-	//	Title: "Nothing2",
-	//	Post:  "Lorem Ipsum Doller Site2",
-	//}
-	////feeds2[ID] = feed
-	//ID++
-	//feeds = append(feeds, feed)
-	//
-	//feed = Item{
-	//	Id:    ID,
-	//	Title: "Nothing3",
-	//	Post:  "Lorem Ipsum Doller Site3",
-	//}
-	////feeds2[ID] = feed
-	//ID++
-	//feeds = append(feeds, feed)
-	//writeJsonResponse(w, 200, feeds)
+	writeJsonResponse(w, 200, employee)
 }
 
 func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +110,7 @@ func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println(data)
 	db := in.openConnection()
-	insertQuery, err := db.Prepare("insert into appscode values (?, ?, ?)")
+	insertQuery, err := db.Prepare("insert into appscode.employee ( name, salary) values ( ?, ?)")
 	if err != nil {
 		log.Fatalf("preparing the db query %s\n", err.Error())
 	}
@@ -160,7 +118,59 @@ func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("while begining the transaction %s\n", err.Error())
 	}
-	_, err = tx.Stmt(insertQuery).Exec(data.id, data.name, data.salary)
+	_, err = tx.Stmt(insertQuery).Exec(data.Name, data.Salary)
+	if err != nil {
+		log.Fatalf("execing the insert command %s\n", err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatalf("while commint the transaction %s\n", err.Error())
+	}
+	in.closeConnection(db)
+}
+func (in Appscode) editInfo(w http.ResponseWriter, r *http.Request) {
+	data := AppscodeEmployee{}
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		log.Fatalf("issue: ", err.Error())
+	}
+	log.Println(data)
+	db := in.openConnection()
+	insertQuery, err := db.Prepare("UPDATE appscode.employee SET name = ?, salary = ?  WHERE id = ?")
+	if err != nil {
+		log.Fatalf("preparing the db query %s\n", err.Error())
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("while begining the transaction %s\n", err.Error())
+	}
+	_, err = tx.Stmt(insertQuery).Exec(data.Name, data.Salary, data.Id)
+	if err != nil {
+		log.Fatalf("execing the insert command %s\n", err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatalf("while commint the transaction %s\n", err.Error())
+	}
+	in.closeConnection(db)
+}
+func (in Appscode) deleteInfo(w http.ResponseWriter, r *http.Request) {
+	data := 0
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		log.Fatalf("issue: ", err.Error())
+	}
+	log.Println(data)
+	db := in.openConnection()
+	insertQuery, err := db.Prepare("DELETE FROM appscode.employee WHERE id = ?")
+	if err != nil {
+		log.Fatalf("preparing the db query %s\n", err.Error())
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("while begining the transaction %s\n", err.Error())
+	}
+	_, err = tx.Stmt(insertQuery).Exec(data)
 	if err != nil {
 		log.Fatalf("execing the insert command %s\n", err.Error())
 	}
