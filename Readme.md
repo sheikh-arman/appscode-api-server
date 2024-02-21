@@ -1,3 +1,5 @@
+docker pull skaliarman/appscode-api-server:latest
+
 - API link:
 - [http://localhost:8080](http://localhost:8080/)
 - http://localhost:8080/employee
