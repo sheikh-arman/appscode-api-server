@@ -28,7 +28,8 @@ jobs:
         env:
           IMAGE_NAME: ghcr.io/sheikh-arman/appscode-api-server
         run: |
-          TAG="0.1.0"  # Timestamp-based tag
+          TAG=${GITHUB_REF#refs/tags/}  # Extracts the tag name from 'refs/tags/x.y.z'
+          echo "Using tag: $TAG"
           docker build -t $IMAGE_NAME:$TAG .
           docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
 
@@ -36,6 +37,6 @@ jobs:
         env:
           IMAGE_NAME: ghcr.io/sheikh-arman/appscode-api-server
         run: |
-          TAG="0.1.0"
+          TAG=${GITHUB_REF#refs/tags/}  # Extracts the tag name from 'refs/tags/x.y.z'
           docker push $IMAGE_NAME:$TAG
           docker push $IMAGE_NAME:latest
