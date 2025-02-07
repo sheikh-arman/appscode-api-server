@@ -15,9 +15,9 @@ import (
 )
 
 type Appscode struct {
-	dbHost     string `json:"dbhost"`
-	dbName     string `json:"dbname"`
-	dbPassword string `json:"dbpassword"`
+	DBHost     string `json:"dbhost"`
+	DBName     string `json:"dbname"`
+	DBPassword string `json:"dbpassword"`
 }
 
 var (
@@ -38,9 +38,9 @@ func Handle() {
 		dbPass = "arman"
 	}
 	in := Appscode{
-		dbHost:     dbHost,
-		dbName:     dbName,
-		dbPassword: dbPass,
+		DBHost:     dbHost,
+		DBName:     dbName,
+		DBPassword: dbPass,
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -101,7 +101,7 @@ func (in Appscode) addInfo(w http.ResponseWriter, r *http.Request) {
 	data := structure.AppscodeEmployee{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		log.Fatalf("issue: ", err.Error())
+		log.Fatalf("issue: %s\n", err.Error())
 	}
 	log.Println(data)
 	db := in.openConnection()
@@ -127,7 +127,7 @@ func (in Appscode) editInfo(w http.ResponseWriter, r *http.Request) {
 	data := structure.AppscodeEmployee{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		log.Fatalf("issue: ", err.Error())
+		log.Fatalf("issue: %s\n", err.Error())
 	}
 	log.Println(data)
 	db := in.openConnection()
@@ -153,7 +153,7 @@ func (in Appscode) deleteInfo(w http.ResponseWriter, r *http.Request) {
 	data := 0
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		log.Fatalf("issue: ", err.Error())
+		log.Fatalf("issue: %s\n", err.Error())
 	}
 	log.Println(data)
 	db := in.openConnection()
@@ -179,11 +179,12 @@ func (in Appscode) deleteInfo(w http.ResponseWriter, r *http.Request) {
 func writeJsonResponse(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	err := json.NewEncoder(w).Encode(data)
+	log.Fatalf("issue writing json response %s\n", err)
 }
 
 func (in Appscode) openConnection() *sql.DB {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", "root", in.dbPassword, in.dbHost, in.dbName))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", "root", in.DBPassword, in.DBHost, in.DBName))
 	if err != nil {
 		log.Fatalf("opening the connection to the database %s\n", err.Error())
 	}
