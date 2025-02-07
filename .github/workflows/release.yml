@@ -28,7 +28,7 @@ jobs:
         env:
           IMAGE_NAME: ghcr.io/sheikh-arman/appscode-api-server
         run: |
-          TAG=$(date +%Y%m%d%H%M%S)  # Timestamp-based tag
+          TAG="0.1.0"  # Timestamp-based tag
           docker build -t $IMAGE_NAME:$TAG .
           docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
 
@@ -36,6 +36,6 @@ jobs:
         env:
           IMAGE_NAME: ghcr.io/sheikh-arman/appscode-api-server
         run: |
-          TAG=$(date +%Y%m%d%H%M%S)
+          TAG="0.1.0"
           docker push $IMAGE_NAME:$TAG
           docker push $IMAGE_NAME:latest
